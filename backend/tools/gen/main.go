@@ -36,7 +36,7 @@ type event struct {
 }
 
 func main() {
-	out := flag.String("out", "data", "output directory")
+	out := flag.String("out", "../data", "output directory")
 	total := flag.Int("n", 2000, "approximate number of valid events to generate")
 	files := flag.Int("files", 4, "number of event files to split across")
 	products := flag.Int("products", 8, "number of products in the catalog")

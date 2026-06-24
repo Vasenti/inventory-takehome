@@ -5,8 +5,8 @@ import "os"
 const (
 	defaultDatabaseURL = "postgres://takehome:takehome@localhost:5438/inventory?sslmode=disable"
 	defaultAPIAddr     = ":8080"
-	defaultEventsDir   = "data/events"
-	defaultProductsCSV = "data/products.csv"
+	defaultEventsDir   = "../data/events"
+	defaultProductsCSV = "../data/products.csv"
 	defaultMigrations  = "migrations"
 )
 
