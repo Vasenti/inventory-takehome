@@ -39,7 +39,7 @@ The API uses Fiber and exposes:
 
 ## Data validation
 
-Invalid lines are skipped and recorded without aborting the whole ingestion run. That includes malformed JSON, unknown SKUs, invalid movement types, non-positive quantities, and invalid timestamps.
+Invalid lines are skipped and recorded without aborting the whole ingestion run. That includes malformed JSON, unknown SKUs, invalid movement types, non-positive quantities, invalid timestamps, and `OUT` movements that would make stock negative.
 
 Validation errors are operationally useful, but they should not block valid inventory events from being processed.
 
@@ -68,6 +68,7 @@ Ingestion application scenarios:
 - stores valid movements through the repository port;
 - counts inserted movements, duplicate deliveries, invalid lines, loaded products, and processed files;
 - treats `StoreMovement(...)=false` as a duplicate and does not count it as inserted;
+- treats insufficient stock as a business validation error, records it, and continues;
 - returns partial summary when an operational error interrupts processing;
 - cancels sibling file workers after the first operational error;
 - propagates product reader, event listing, event reading, product upsert, movement store, and error-recording failures.
@@ -84,6 +85,7 @@ Infrastructure scenarios that are worth integration tests or focused adapter tes
 
 - PostgreSQL movement storage inserts a new event and updates materialized stock in the same transaction;
 - duplicate `event_id` does not update stock again;
+- `OUT` movements that would make stock negative are rolled back and recorded as ingest errors;
 - invalid lines are persisted in `ingest_errors`;
 - product history query remains ordered by `occurred_at DESC, event_id`;
 - migrations are idempotent through `schema_migrations`;

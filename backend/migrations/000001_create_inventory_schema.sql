@@ -18,7 +18,7 @@ CREATE INDEX idx_inventory_movements_sku_occurred_at
 
 CREATE TABLE product_stock (
     sku TEXT PRIMARY KEY REFERENCES products (sku),
-    quantity BIGINT NOT NULL DEFAULT 0,
+    quantity BIGINT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

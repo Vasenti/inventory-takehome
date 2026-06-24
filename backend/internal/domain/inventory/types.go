@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"errors"
 	"strings"
 	"time"
 )
@@ -11,6 +12,8 @@ const (
 	MovementTypeIn  MovementType = "IN"
 	MovementTypeOut MovementType = "OUT"
 )
+
+var ErrInsufficientStock = errors.New("insufficient stock")
 
 type Product struct {
 	SKU  string

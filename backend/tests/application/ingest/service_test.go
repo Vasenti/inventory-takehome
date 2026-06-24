@@ -144,6 +144,38 @@ func TestServiceRunReturnsPartialSummaryOnMovementStoreError(t *testing.T) {
 	}
 }
 
+func TestServiceRunRecordsInsufficientStockAndContinues(t *testing.T) {
+	repo := &fakeRepository{storeErr: inventory.ErrInsufficientStock}
+	service := ingest.NewService(
+		&fakeProductReader{products: []inventory.Product{{SKU: "SKU-0001", Name: "Small box"}}},
+		&fakeEventReader{
+			files: []string{"part-000.ndjson"},
+			lines: map[string][]ingest.EventLine{
+				"part-000.ndjson": {validLine("part-000.ndjson", 1, "evt-0001", "SKU-0001", "OUT", 10)},
+			},
+		},
+		repo,
+	)
+
+	summary, err := service.Run(context.Background(), ingest.Options{EventsDir: "events"})
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if summary.InvalidLines != 1 {
+		t.Fatalf("expected 1 invalid line, got %d", summary.InvalidLines)
+	}
+	if summary.EventsInserted != 0 {
+		t.Fatalf("expected 0 inserted events, got %d", summary.EventsInserted)
+	}
+	if len(repo.ingestErrors) != 1 {
+		t.Fatalf("expected 1 ingest error, got %d", len(repo.ingestErrors))
+	}
+	if repo.ingestErrors[0].reason != inventory.ErrInsufficientStock.Error() {
+		t.Fatalf("expected insufficient stock reason, got %q", repo.ingestErrors[0].reason)
+	}
+}
+
 func TestServiceRunReturnsErrorRecordingFailure(t *testing.T) {
 	expectedErr := errors.New("record ingest error failed")
 	service := ingest.NewService(

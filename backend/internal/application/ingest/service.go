@@ -112,6 +112,13 @@ func (service *Service) processEventFile(ctx context.Context, path string, known
 
 		inserted, err := service.repo.StoreMovement(ctx, movement)
 		if err != nil {
+			if errors.Is(err, inventory.ErrInsufficientStock) {
+				if err := service.repo.RecordIngestError(ctx, line.SourceFile, line.LineNumber, line.RawLine, inventory.ErrInsufficientStock.Error()); err != nil {
+					return err
+				}
+				addInvalidLine(summary, mu)
+				return nil
+			}
 			return err
 		}
 		addProcessedEvent(summary, mu, inserted)

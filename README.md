@@ -39,14 +39,14 @@ cd backend
 go run ./cmd/ingest
 ```
 
-Expected sample output:
+Sample output shape:
 
 ```text
-products loaded: 8
-files processed: 4
-events inserted: 2000
-duplicates skipped: 188
-invalid lines: 81
+products loaded: <count>
+files processed: <count>
+events inserted: <count>
+duplicates skipped: <count>
+invalid lines: <count>
 ```
 
 Run the API:

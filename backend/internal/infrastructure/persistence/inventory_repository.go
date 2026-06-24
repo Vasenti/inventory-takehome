@@ -51,16 +51,28 @@ func (repo *InventoryRepository) StoreMovement(ctx context.Context, movement dom
 			return nil
 		}
 
-		delta := movement.Quantity
 		if movement.Type == domain.MovementTypeOut {
-			delta = -delta
+			result := tx.Exec(`
+				UPDATE product_stock
+				SET quantity = quantity - ?, updated_at = now()
+				WHERE sku = ? AND quantity >= ?
+			`, movement.Quantity, movement.SKU, movement.Quantity)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return domain.ErrInsufficientStock
+			}
+
+			inserted = true
+			return nil
 		}
 
 		if err := tx.Exec(`
 			UPDATE product_stock
 			SET quantity = quantity + ?, updated_at = now()
 			WHERE sku = ?
-		`, delta, movement.SKU).Error; err != nil {
+		`, movement.Quantity, movement.SKU).Error; err != nil {
 			return err
 		}
 
