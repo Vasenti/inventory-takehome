@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +33,11 @@ func NewAPI(database *gorm.DB) *API {
 
 func (api *API) Routes() *fiber.App {
 	app := fiber.New()
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:5173,http://127.0.0.1:5173",
+		AllowMethods: "GET,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept",
+	}))
 	app.Get("/healthz", api.health)
 	app.Get("/products/stock", api.listProductStock)
 	app.Get("/products/:sku/movements", api.listProductMovements)
