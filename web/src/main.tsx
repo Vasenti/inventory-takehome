@@ -101,20 +101,24 @@ function App() {
               {loadingProducts && <span>Loading</span>}
             </div>
             <div className="product-table">
-              {products.map((product) => (
-                <button
-                  className={product.sku === selectedSKU ? "product-row selected" : "product-row"}
-                  key={product.sku}
-                  onClick={() => setSelectedSKU(product.sku)}
-                  type="button"
-                >
-                  <span>
-                    <strong>{product.sku}</strong>
-                    <small>{product.name}</small>
-                  </span>
-                  <b>{product.quantity}</b>
-                </button>
-              ))}
+              {!loadingProducts && products.length === 0 ? (
+                <p className="empty-state">No data available.</p>
+              ) : (
+                products.map((product) => (
+                  <button
+                    className={product.sku === selectedSKU ? "product-row selected" : "product-row"}
+                    key={product.sku}
+                    onClick={() => setSelectedSKU(product.sku)}
+                    type="button"
+                  >
+                    <span>
+                      <strong>{product.sku}</strong>
+                      <small>{product.name}</small>
+                    </span>
+                    <b>{product.quantity}</b>
+                  </button>
+                ))
+              )}
             </div>
           </section>
 
@@ -139,6 +143,9 @@ function App() {
                   <code>{movement.event_id}</code>
                 </div>
               ))}
+              {!loadingMovements && selectedSKU && movements.length === 0 && (
+                <p className="empty-state">No data available.</p>
+              )}
             </div>
           </section>
         </div>

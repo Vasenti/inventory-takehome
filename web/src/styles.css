@@ -182,6 +182,12 @@ button {
   border-bottom: 0;
 }
 
+.empty-state {
+  margin: 0;
+  padding: 18px 14px;
+  color: #66727c;
+}
+
 .movement-row code {
   overflow: hidden;
   text-overflow: ellipsis;
