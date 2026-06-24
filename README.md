@@ -12,6 +12,18 @@ web/       React + TypeScript frontend
 data/      product catalog and NDJSON event files
 ```
 
+## Backend Architecture
+
+The backend uses a lightweight layered structure:
+
+```text
+backend/internal/domain          Inventory types and validation rules
+backend/internal/application     Ingestion and query use cases
+backend/internal/infrastructure  PostgreSQL, file readers, migrations, and Fiber handlers
+```
+
+The application layer depends on small interfaces. Infrastructure packages implement those interfaces with PostgreSQL, NDJSON/CSV readers, and Fiber HTTP handlers.
+
 ## Backend
 
 Start PostgreSQL:
