@@ -8,6 +8,8 @@ import (
 	"syscall"
 
 	"takehome/internal/config"
+	"takehome/internal/db"
+	"takehome/internal/inventory"
 )
 
 func main() {
@@ -23,8 +25,34 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
-	_ = ctx
-	_ = cfg
+	database, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	sqlDB, err := database.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
+
+	if err := db.ApplyMigrations(ctx, database, cfg.Migrations); err != nil {
+		return err
+	}
+
+	app := inventory.NewAPI(database).Routes()
+
+	errCh := make(chan error, 1)
+	go func() {
+		fmt.Fprintf(os.Stdout, "api listening on %s\n", cfg.APIAddr)
+		errCh <- app.Listen(cfg.APIAddr)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return app.Shutdown()
+	case err := <-errCh:
+		return err
+	}
+
 }
