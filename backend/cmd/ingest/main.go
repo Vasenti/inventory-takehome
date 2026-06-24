@@ -7,9 +7,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"takehome/internal/application/ingest"
 	"takehome/internal/config"
-	"takehome/internal/db"
-	"takehome/internal/inventory"
+	"takehome/internal/infrastructure/database"
+	"takehome/internal/infrastructure/files"
+	"takehome/internal/infrastructure/persistence"
 )
 
 func main() {
@@ -25,22 +27,25 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
-	database, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
+	dbConn, err := database.OpenPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
 
-	sqlDB, err := database.DB()
+	sqlDB, err := dbConn.DB()
 	if err != nil {
 		return err
 	}
 	defer sqlDB.Close()
 
-	if err := db.ApplyMigrations(ctx, database, cfg.Migrations); err != nil {
+	if err := database.ApplyMigrations(ctx, dbConn, cfg.Migrations); err != nil {
 		return err
 	}
 
-	summary, err := inventory.RunIngest(ctx, database, inventory.IngestOptions{
+	repo := persistence.NewInventoryRepository(dbConn)
+	service := ingest.NewService(files.ProductCSVReader{}, files.NDJSONEventReader{}, repo)
+
+	summary, err := service.Run(ctx, ingest.Options{
 		ProductsCSV: cfg.ProductsCSV,
 		EventsDir:   cfg.EventsDir,
 	})

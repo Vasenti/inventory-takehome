@@ -7,9 +7,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	application "takehome/internal/application/inventory"
 	"takehome/internal/config"
-	"takehome/internal/db"
-	"takehome/internal/inventory"
+	"takehome/internal/infrastructure/database"
+	transport "takehome/internal/infrastructure/http"
+	"takehome/internal/infrastructure/persistence"
 )
 
 func main() {
@@ -25,22 +27,24 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
-	database, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
+	dbConn, err := database.OpenPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
 
-	sqlDB, err := database.DB()
+	sqlDB, err := dbConn.DB()
 	if err != nil {
 		return err
 	}
 	defer sqlDB.Close()
 
-	if err := db.ApplyMigrations(ctx, database, cfg.Migrations); err != nil {
+	if err := database.ApplyMigrations(ctx, dbConn, cfg.Migrations); err != nil {
 		return err
 	}
 
-	app := inventory.NewAPI(database).Routes()
+	repo := persistence.NewInventoryRepository(dbConn)
+	service := application.NewService(repo)
+	app := transport.NewInventoryHandler(service).Routes()
 
 	errCh := make(chan error, 1)
 	go func() {
