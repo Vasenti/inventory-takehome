@@ -1,0 +1,2 @@
+-- Initial inventory schema.
+-- The concrete tables and indexes are added in the schema design commit.
