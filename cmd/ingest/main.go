@@ -36,6 +36,10 @@ func run(ctx context.Context, cfg config.Config) error {
 	}
 	defer sqlDB.Close()
 
+	if err := db.ApplyMigrations(ctx, database, cfg.Migrations); err != nil {
+		return err
+	}
+
 	summary, err := inventory.RunIngest(ctx, database, inventory.IngestOptions{
 		ProductsCSV: cfg.ProductsCSV,
 		EventsDir:   cfg.EventsDir,

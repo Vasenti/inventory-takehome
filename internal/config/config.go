@@ -7,6 +7,7 @@ const (
 	defaultAPIAddr     = ":8080"
 	defaultEventsDir   = "data/events"
 	defaultProductsCSV = "data/products.csv"
+	defaultMigrations  = "migrations"
 )
 
 type Config struct {
@@ -14,6 +15,7 @@ type Config struct {
 	APIAddr     string
 	EventsDir   string
 	ProductsCSV string
+	Migrations  string
 }
 
 func Load() Config {
@@ -22,6 +24,7 @@ func Load() Config {
 		APIAddr:     envOrDefault("API_ADDR", defaultAPIAddr),
 		EventsDir:   envOrDefault("EVENTS_DIR", defaultEventsDir),
 		ProductsCSV: envOrDefault("PRODUCTS_CSV", defaultProductsCSV),
+		Migrations:  envOrDefault("MIGRATIONS_DIR", defaultMigrations),
 	}
 }
 
