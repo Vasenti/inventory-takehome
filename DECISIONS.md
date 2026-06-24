@@ -2,42 +2,52 @@
 
 ## Delivery strategy
 
-I treated the 4-hour limit as part of the problem. My priority is to deliver a correct and explainable backend first, then add the smallest frontend that proves the API contract works.
+I treated the 4-hour limit as part of the problem. I prioritized a correct and explainable backend first, then added the smallest frontend that proves the API contract works.
 
-The intended order is:
+The implemented order was:
 
 1. Design the PostgreSQL schema around correctness and query patterns.
-2. Implement ingestion with idempotency, validation, bounded concurrency, and graceful cancellation.
-3. Expose the stock and movement-history API.
-4. Add a minimal React + TypeScript UI only after the backend path is solid.
+2. Implement migrations so the backend can bootstrap the database.
+3. Implement ingestion with idempotency, validation, bounded database connections, and graceful cancellation.
+4. Expose the stock and movement-history API with Fiber.
+5. Add a minimal React + TypeScript UI after the backend path was working.
 
 ## Backend design
 
-The ingestion process should read all event files under `data/events/` concurrently, but database writes must stay within the configured connection pool limit. I plan to keep the pool size at 10 and use worker limits so file concurrency does not become unbounded database concurrency.
+The backend lives under `backend/` as its own Go module. The frontend lives under `web/`, and the sample data remains at the repository root under `data/`.
 
-Each valid movement is stored once using `event_id` as the idempotency key. Duplicate deliveries should not change stock more than once, whether they appear in the same file or across different files.
+The ingestion process reads all event files under `data/events/` concurrently, while the GORM-backed PostgreSQL connection pool is capped at 10 open connections to respect the exercise constraint.
 
-Stock should be materialized per product instead of recalculated from the full movement table on every request. That makes the current-stock endpoint fast and predictable as the movement table grows to millions of rows.
+Each valid movement is stored once using `event_id` as the idempotency key. Duplicate deliveries do not change stock more than once, whether they appear in the same file or across different files.
 
-The product movement history should be indexed by product and movement time because it is expected to be queried constantly.
+Stock is materialized per product instead of recalculated from the full movement table on every request. That makes the current-stock endpoint fast and predictable as the movement table grows to millions of rows.
+
+The product movement history is indexed by product and movement time because it is expected to be queried constantly.
+
+The API uses Fiber and exposes:
+
+- `GET /products/stock`
+- `GET /products/:sku/movements`
 
 ## Data validation
 
-Invalid lines should be skipped and recorded without aborting the whole ingestion run. That includes malformed JSON, unknown SKUs, invalid movement types, non-positive quantities, and invalid timestamps.
+Invalid lines are skipped and recorded without aborting the whole ingestion run. That includes malformed JSON, unknown SKUs, invalid movement types, non-positive quantities, and invalid timestamps.
 
 Validation errors are operationally useful, but they should not block valid inventory events from being processed.
 
 ## Trade-offs
 
-I am optimizing for correctness, observability, and simple operational behavior over maximum throughput.
+I optimized for correctness, observability, and simple operational behavior over maximum throughput.
 
-A batch-oriented ingestion path could be faster for very large datasets, but the first version should stay easy to reason about: validate, deduplicate, insert the movement, and update materialized stock in one database transaction.
+A batch-oriented ingestion path could be faster for very large datasets, but this version stays easy to reason about: validate, deduplicate, insert the movement, and update materialized stock in one database transaction.
 
-I will keep the frontend intentionally small. The exercise says visual polish is not evaluated, so frontend work should prove the API integration rather than consume time better spent on ingestion correctness.
+I used explicit SQL for the critical ingestion and query paths even though the project uses GORM for the database connection. That keeps idempotency and stock updates easy to inspect.
+
+The frontend is intentionally small. The exercise says visual polish is not evaluated, so frontend work proves the API integration rather than consuming time better spent on ingestion correctness.
 
 ## AI usage
 
-I used AI as a pair-programming assistant to review the exercise, shape the implementation plan, and challenge trade-offs. I kept the commit messages and final design decisions explicit instead of relying on generated summaries.
+I used AI as a pair-programming assistant to review the exercise, shape the implementation plan, implement focused slices, and challenge trade-offs. I kept commit messages and final design decisions explicit instead of relying on generated summaries.
 
 I accepted help for structuring the work and identifying risks such as idempotency, bounded database concurrency, cancellation, and indexes for history queries.
 
@@ -45,6 +55,6 @@ I would reject AI output that hides important decisions behind generic abstracti
 
 ## Known limits
 
-If time gets tight, I will prefer a backend with migrations, ingestion, API, and clear documentation over a polished frontend.
+The current solution covers migrations, ingestion, API, and a minimal frontend.
 
-Nice-to-have items that may stay out of scope are advanced ingestion metrics, pagination beyond the minimal history endpoint, containerized app services, authentication, and elaborate UI styling.
+Nice-to-have items left out of scope are advanced ingestion metrics, pagination for very large movement histories, containerized backend/frontend services, authentication, richer API error types, and elaborate UI styling.
