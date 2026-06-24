@@ -27,21 +27,29 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
+	// Open PostgreSQL once and pass the GORM handle to infrastructure adapters.
+	// The pool limit is enforced inside infrastructure/database.
 	dbConn, err := database.OpenPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
 
+	// main owns process-level resources, so it also closes the underlying
+	// database handle before exiting.
 	sqlDB, err := dbConn.DB()
 	if err != nil {
 		return err
 	}
 	defer sqlDB.Close()
 
+	// Ingest can be run on a fresh database; already-applied migrations are
+	// tracked in schema_migrations and skipped.
 	if err := database.ApplyMigrations(ctx, dbConn, cfg.Migrations); err != nil {
 		return err
 	}
 
+	// Compose the ingestion use case with concrete adapters. The application
+	// layer coordinates readers and persistence without knowing about files or SQL.
 	repo := persistence.NewInventoryRepository(dbConn)
 	service := ingest.NewService(files.ProductCSVReader{}, files.NDJSONEventReader{}, repo)
 
@@ -53,6 +61,8 @@ func run(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
+	// Print a compact operational summary that is useful for manual validation
+	// and for checking duplicate/invalid-line behavior on generated datasets.
 	fmt.Fprintf(os.Stdout, "products loaded: %d\n", summary.ProductsLoaded)
 	fmt.Fprintf(os.Stdout, "files processed: %d\n", summary.FilesProcessed)
 	fmt.Fprintf(os.Stdout, "events inserted: %d\n", summary.EventsInserted)
