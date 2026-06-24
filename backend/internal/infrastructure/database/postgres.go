@@ -21,6 +21,8 @@ func OpenPostgres(ctx context.Context, databaseURL string) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// The exercise states that production provides a PostgreSQL pool of 10
+	// connections, so the application enforces the same upper bound locally.
 	sqlDB.SetMaxOpenConns(maxOpenConnections)
 	sqlDB.SetMaxIdleConns(maxOpenConnections)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)

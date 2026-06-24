@@ -61,6 +61,8 @@ func (service *Service) processEventFiles(ctx context.Context, eventsDir string,
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Files are processed concurrently, while database concurrency remains
+	// bounded by the PostgreSQL pool configured in infrastructure/database.
 	var (
 		mu       sync.Mutex
 		wg       sync.WaitGroup
@@ -75,6 +77,8 @@ func (service *Service) processEventFiles(ctx context.Context, eventsDir string,
 			if err := service.processEventFile(ctx, path, knownProducts, summary, &mu); err != nil {
 				mu.Lock()
 				if firstErr == nil {
+					// Operational errors cancel the whole ingest; invalid event
+					// lines are recorded and skipped inside processEventFile.
 					firstErr = err
 					cancel()
 				}

@@ -47,6 +47,8 @@ type MovementHistoryItem struct {
 	OccurredAt   time.Time `json:"occurred_at"`
 }
 
+// ValidateMovement keeps inventory rules in the domain layer so file parsing,
+// HTTP handlers, and PostgreSQL persistence all depend on the same constraints.
 func ValidateMovement(input MovementInput, knownProducts map[string]struct{}) (Movement, string) {
 	if strings.TrimSpace(input.EventID) == "" {
 		return Movement{}, "event_id is required"

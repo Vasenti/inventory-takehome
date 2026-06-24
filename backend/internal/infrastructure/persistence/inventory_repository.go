@@ -37,6 +37,8 @@ func (repo *InventoryRepository) UpsertProduct(ctx context.Context, product doma
 func (repo *InventoryRepository) StoreMovement(ctx context.Context, movement domain.Movement) (bool, error) {
 	inserted := false
 	err := repo.database.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// event_id is the idempotency key for at-least-once delivery. Stock is
+		// updated only when this insert wins, so duplicate deliveries are inert.
 		result := tx.Exec(`
 			INSERT INTO inventory_movements (event_id, sku, movement_type, quantity, occurred_at)
 			VALUES (?, ?, ?, ?, ?)

@@ -102,6 +102,8 @@ func (NDJSONEventReader) ReadEvents(ctx context.Context, path string, handle fun
 		}
 
 		if err := json.Unmarshal([]byte(rawLine), &line.Input); err != nil {
+			// Malformed JSON is passed back as data, not as a reader error, so
+			// the application layer can record it and continue the ingest.
 			line.ParseError = "malformed json"
 		}
 
